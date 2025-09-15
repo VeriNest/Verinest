@@ -1,0 +1,40 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc-version = "0.8.30"
+
+# Optimizer settings
+optimizer = true
+optimizer_runs = 200
+
+# Additional settings
+auto_detect_solc = true
+via_ir = false
+
+# EVM version
+evm_version = "london"
+
+# Remappings for OpenZeppelin
+remappings = [
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+    "forge-std/=lib/forge-std/src/",
+    "ds-test/=lib/ds-test/src/"
+]
+
+# Gas limit for deployment
+gas_limit = 30_000_000
+
+# RPC endpoints
+[rpc_endpoints]
+core_testnet = "https://rpc.test.btcs.network"
+core_mainnet = "https://rpc.coredao.org"
+
+# Etherscan API keys for Core blockchain
+[etherscan]
+core_testnet = { key = "${CORE_SCAN_API_KEY}", url = "https://scan.test.btcs.network/api" }
+core_mainnet = { key = "${CORE_SCAN_API_KEY}", url = "https://openapi.coredao.org/api" }
+
+# Fuzz testing
+[fuzz]
+runs = 256

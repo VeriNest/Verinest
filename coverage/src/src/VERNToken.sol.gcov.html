@@ -1,0 +1,228 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - lcov.info - src/src/VERNToken.sol</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">src/src</a> - VERNToken.sol<span style="font-size: 80%;"> (source / <a href="VERNToken.sol.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">lcov.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">55</td>
+            <td class="headerCovTableEntry">55</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2025-08-22 16:22:04</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntry">8</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">-</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-License-Identifier: MIT</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : pragma solidity ^0.8.24;</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : </span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : import {ERC20} from &quot;openzeppelin-contracts/contracts/token/ERC20/ERC20.sol&quot;;</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : import {Ownable} from &quot;openzeppelin-contracts/contracts/access/Ownable.sol&quot;;</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : import {SafeERC20} from &quot;openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol&quot;;</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : import {IERC20} from &quot;openzeppelin-contracts/contracts/token/ERC20/IERC20.sol&quot;;</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : </span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : contract VERNToken is ERC20, Ownable {</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             :     using SafeERC20 for IERC20;</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : </span>
+<span id="L12"><span class="lineNum">      12</span>                 :             :     struct UserData {</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             :         bool isExempt;</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             :         uint256 vestingEnd;</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             :     }</span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : </span>
+<span id="L17"><span class="lineNum">      17</span>                 :             :     error MaxWalletLimitExceeded();</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             :     error Unauthorized();</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             :     error VestingActive();</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             :     error ZeroAmount();</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             :     error InsufficientBalance();</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : </span>
+<span id="L23"><span class="lineNum">      23</span>                 :             :     uint256 public constant TOTAL_SUPPLY = 512_000_000 ether;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             :     uint256 constant LOCK_PERIOD = 5 * 365 days;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             :     uint256 public constant MAX_WALLET_PERCENT = 2; // 2%</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             :     uint256 public constant PCT_ADMIN = 10;</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             :     uint256 public constant PCT_UTILITY = 10;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             :     uint256 public constant PCT_AGENT_POOL = 10;</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             :     uint256 public constant PCT_AIRDROP = 15;</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             :     uint256 public constant PCT_TREASURY = 5;</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             :     uint256 public constant MAX_WALLET_LIMIT = 1_000_000 ether;</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             :     uint256 public constant MAX_WALLET = (TOTAL_SUPPLY * MAX_WALLET_PERCENT) / 100;</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : </span>
+<span id="L34"><span class="lineNum">      34</span>                 :             :     event TokensWithdrawn(address indexed to, uint256 amount);</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :     event ExemptionSet(address indexed addr, bool isExempt);</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :     event VestingUpdated(address indexed addr, uint256 vestingEnd);</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             :     event LockedSentToStaking(address indexed staking, uint256 amount);</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             : </span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :     mapping(address =&gt; bool) public isExempt;</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             :     mapping(address =&gt; UserData) public userData;</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :     mapping(address =&gt; uint256) public vestingEnd;</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             : </span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC tlaBgGNC">          42 :     constructor(</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :         address[6] memory adminWallets,</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :         address utilityPool,</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :         address agentPool,</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :         address communityAirdropReserve,</span>
+<span id="L48"><span class="lineNum">      48</span>                 :             :         address treasuryDao,</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :         address stakingContract</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :     ) ERC20(&quot;VeriNest Token&quot;, &quot;VERN&quot;) {</span>
+<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">          42 :         _mint(address(this), TOTAL_SUPPLY);</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :             : </span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">          42 :         uint256 adminShare = MAX_WALLET_LIMIT;</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">          42 :         uint256 adminTotal = (TOTAL_SUPPLY * PCT_ADMIN) / 100;</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          42 :         uint256 utilityTotal = (TOTAL_SUPPLY * PCT_UTILITY) / 100;</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">          42 :         uint256 agentTotal = (TOTAL_SUPPLY * PCT_AGENT_POOL) / 100;</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">          42 :         uint256 airdropTotal = (TOTAL_SUPPLY * PCT_AIRDROP) / 100;</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">          42 :         uint256 treasuryTotal = (TOTAL_SUPPLY * PCT_TREASURY) / 100;</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :             : </span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :         // Distribute admin 10% across 6 wallets</span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">          42 :         uint256 perAdmin = adminTotal / 6;</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">          42 :         uint256 remainder = adminTotal - perAdmin * 6;</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">          42 :         for (uint8 i = 0; i &lt; adminWallets.length; i++) {</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">         252 :             address admin = adminWallets[i];</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         252 :             userData[admin] = UserData(true, block.timestamp + 5 * 365 days);</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :             //     // Now they are exempt, so transfer won't fail</span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         252 :             uint256 amount = perAdmin;</span></span>
+<span id="L68"><span class="lineNum">      68</span>            [<span class="tlaGBC" title="Branch 0 was taken 42 times"> + </span>]:<span class="tlaGNC">         252 :             if (i == 5) {</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">          42 :                 amount += remainder; // give the remainder to the last wallet</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :             }</span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         252 :             _transfer(address(this), admin, amount);</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :             :             // _transfer(address(this), admin, perAdmin);</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :             // _transfer(address(this), admin, adminShare);</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :         }</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             : </span>
+<span id="L76"><span class="lineNum">      76</span>                 :             :         // Other live allocations</span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">          42 :         _transfer(address(this), utilityPool, utilityTotal);</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">          42 :         _transfer(address(this), agentPool, agentTotal);</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">          42 :         _transfer(address(this), communityAirdropReserve, airdropTotal);</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">          42 :         _transfer(address(this), treasuryDao, treasuryTotal);</span></span>
+<span id="L81"><span class="lineNum">      81</span>                 :             : </span>
+<span id="L82"><span class="lineNum">      82</span>                 :             :         // Locked 50% -&gt; staking contract</span>
+<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">          42 :         uint256 distributed = adminTotal + (TOTAL_SUPPLY * PCT_UTILITY) / 100 + (TOTAL_SUPPLY * PCT_AGENT_POOL) / 100</span></span>
+<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">          42 :             + (TOTAL_SUPPLY * PCT_AIRDROP) / 100 + (TOTAL_SUPPLY * PCT_TREASURY) / 100;</span></span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">          42 :         uint256 locked = TOTAL_SUPPLY - distributed; // another 256M</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">          42 :         _transfer(address(this), stakingContract, locked);</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :             : </span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">          42 :         emit LockedSentToStaking(stakingContract, locked);</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :             : </span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">          42 :         userData[msg.sender].isExempt = true;</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :     }</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             : </span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :     /// @notice Add or remove exempted address (admin only)</span>
+<span id="L94"><span class="lineNum">      94</span>                 :<span class="tlaGNC">           4 :     function setExempt(address addr, bool exempt) external onlyOwner {</span></span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">           3 :         isExempt[addr] = exempt;</span></span>
+<span id="L96"><span class="lineNum">      96</span>                 :<span class="tlaGNC">           3 :         userData[addr].isExempt = exempt;</span></span>
+<span id="L97"><span class="lineNum">      97</span>                 :<span class="tlaGNC">           3 :         emit ExemptionSet(addr, exempt);</span></span>
+<span id="L98"><span class="lineNum">      98</span>                 :             :     }</span>
+<span id="L99"><span class="lineNum">      99</span>                 :             : </span>
+<span id="L100"><span class="lineNum">     100</span>                 :             :     /// @notice Manually set vesting end time</span>
+<span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">           5 :     function setVesting(address addr, uint256 timestamp) external onlyOwner {</span></span>
+<span id="L102"><span class="lineNum">     102</span>                 :<span class="tlaGNC">           4 :         vestingEnd[addr] = timestamp;</span></span>
+<span id="L103"><span class="lineNum">     103</span>                 :<span class="tlaGNC">           4 :         userData[addr].vestingEnd = timestamp;</span></span>
+<span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">           4 :         emit VestingUpdated(addr, timestamp);</span></span>
+<span id="L105"><span class="lineNum">     105</span>                 :             :     }</span>
+<span id="L106"><span class="lineNum">     106</span>                 :             : </span>
+<span id="L107"><span class="lineNum">     107</span>                 :             :     /// @notice Withdraw tokens from contract (admin only)</span>
+<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">           6 :     function withdrawTokens(address to, uint256 amount) external onlyOwner {</span></span>
+<span id="L109"><span class="lineNum">     109</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           5 :         if (to == address(0)) revert Unauthorized();</span></span>
+<span id="L110"><span class="lineNum">     110</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           4 :         if (amount == 0) revert ZeroAmount();</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :             : </span>
+<span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">           3 :         uint256 balance = balanceOf(address(this));</span></span>
+<span id="L113"><span class="lineNum">     113</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           3 :         if (amount &gt; balance) revert InsufficientBalance();</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :             : </span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">           2 :         _transfer(address(this), to, amount);</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">           2 :         emit TokensWithdrawn(to, amount);</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :     }</span>
+<span id="L118"><span class="lineNum">     118</span>                 :             : </span>
+<span id="L119"><span class="lineNum">     119</span>                 :             :     /// @notice Withdraw all tokens from contract (admin only)</span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">           4 :     function withdrawAllTokens(address to) external onlyOwner {</span></span>
+<span id="L121"><span class="lineNum">     121</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           3 :         if (to == address(0)) revert Unauthorized();</span></span>
+<span id="L122"><span class="lineNum">     122</span>                 :             : </span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">           2 :         uint256 balance = balanceOf(address(this));</span></span>
+<span id="L124"><span class="lineNum">     124</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         if (balance == 0) revert InsufficientBalance();</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :             : </span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">           1 :         _transfer(address(this), to, balance);</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">           1 :         emit TokensWithdrawn(to, balance);</span></span>
+<span id="L128"><span class="lineNum">     128</span>                 :             :     }</span>
+<span id="L129"><span class="lineNum">     129</span>                 :             : </span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :     /// @notice Get the vesting end time for an address</span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">          43 :     function getVestingEnd(address addr) external view returns (uint256) {</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">          43 :         return userData[addr].vestingEnd;</span></span>
+<span id="L133"><span class="lineNum">     133</span>                 :             :     }</span>
+<span id="L134"><span class="lineNum">     134</span>                 :             : </span>
+<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">           2 :     function isVestingActive(address addr) external view returns (bool) {</span></span>
+<span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">           2 :         return block.timestamp &lt; userData[addr].vestingEnd;</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :     }</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             : </span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">           1 :     function getVestingInfo(address addr) external view returns (uint256 endTime, bool isActive) {</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">           1 :         endTime = userData[addr].vestingEnd;</span></span>
+<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">           1 :         isActive = block.timestamp &lt; endTime;</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :     }</span>
+<span id="L143"><span class="lineNum">     143</span>                 :             : }</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
